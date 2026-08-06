@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'bluetooth_screen.dart';
 
 void main() {
   runApp(const MyApp());
@@ -80,7 +81,6 @@ class _HomeScreenState extends State<HomeScreen>
           child: Column(
             children: [
               const SizedBox(height: 40),
-              // App Title
               const Text(
                 'VISION ASSIST',
                 style: TextStyle(
@@ -100,12 +100,10 @@ class _HomeScreenState extends State<HomeScreen>
                 ),
               ),
               const Spacer(),
-
-              // Status Text
               AnimatedSwitcher(
                 duration: const Duration(milliseconds: 300),
                 child: Text(
-                  isListening ? '🎙️ Sun Raha Hu...' : 'Bolne Ke Liye Tap Karo',
+                  isListening ? 'Sun Raha Hu...' : 'Bolne Ke Liye Tap Karo',
                   key: ValueKey<bool>(isListening),
                   style: const TextStyle(
                     fontSize: 24,
@@ -116,8 +114,6 @@ class _HomeScreenState extends State<HomeScreen>
                 ),
               ),
               const SizedBox(height: 60),
-
-              // Glowing Pulsing Mic Button
               GestureDetector(
                 onTap: toggleListening,
                 child: AnimatedBuilder(
@@ -155,10 +151,7 @@ class _HomeScreenState extends State<HomeScreen>
                   },
                 ),
               ),
-
               const Spacer(),
-
-              // Bottom Icon Row (Bluetooth + WiFi placeholders)
               Container(
                 margin: const EdgeInsets.only(bottom: 30),
                 padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 16),
@@ -170,7 +163,12 @@ class _HomeScreenState extends State<HomeScreen>
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    _buildIconButton(Icons.bluetooth, 'Bluetooth', () {}),
+                    _buildIconButton(Icons.bluetooth, 'Bluetooth', () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const BluetoothScreen()),
+                      );
+                    }),
                     const SizedBox(width: 40),
                     _buildIconButton(Icons.wifi, 'WiFi', () {}),
                   ],
