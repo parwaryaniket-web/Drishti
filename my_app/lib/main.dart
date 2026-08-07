@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'bluetooth_screen.dart';
+import 'package:wifi_scan/wifi_scan.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 void main() {
   runApp(const MyApp());
@@ -32,6 +34,7 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen>
     with SingleTickerProviderStateMixin {
   bool isListening = false;
+  List<String> wifiNetworks = [];
   late AnimationController _pulseController;
   late Animation<double> _pulseAnimation;
 
@@ -58,6 +61,49 @@ class _HomeScreenState extends State<HomeScreen>
     setState(() {
       isListening = !isListening;
     });
+  }
+
+  void scanWifi() async {
+    await Permission.location.request();
+
+    final can = await WiFiScan.instance.canStartScan();
+    if (can != CanStartScan.yes) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('WiFi scan possible nahi hai is phone pe')),
+      );
+      return;
+    }
+
+    await WiFiScan.instance.startScan();
+
+    final results = await WiFiScan.instance.getScannedResults();
+    setState(() {
+      wifiNetworks = results.map((ap) => ap.ssid).where((name) => name.isNotEmpty).toList();
+    });
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.grey[900],
+        title: const Text('Nearby WiFi Networks', style: TextStyle(color: Colors.white)),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: ListView.builder(
+            shrinkWrap: true,
+            itemCount: wifiNetworks.length,
+            itemBuilder: (context, index) => ListTile(
+              title: Text(wifiNetworks[index], style: const TextStyle(color: Colors.white)),
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Band Karo'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -170,7 +216,9 @@ class _HomeScreenState extends State<HomeScreen>
                       );
                     }),
                     const SizedBox(width: 40),
-                    _buildIconButton(Icons.wifi, 'WiFi', () {}),
+                    _buildIconButton(Icons.wifi, 'WiFi', () {
+                      scanWifi();
+                    }),
                   ],
                 ),
               ),
