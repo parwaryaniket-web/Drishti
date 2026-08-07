@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'bluetooth_screen.dart';
 import 'package:wifi_scan/wifi_scan.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:speech_to_text/speech_to_text.dart' as stt;
+import 'package:flutter_tts/flutter_tts.dart';
+import 'map_screen.dart';
 
 void main() {
   runApp(const MyApp());
@@ -38,6 +41,11 @@ class _HomeScreenState extends State<HomeScreen>
   late AnimationController _pulseController;
   late Animation<double> _pulseAnimation;
 
+  late stt.SpeechToText _speech;
+  String recognizedText = '';
+
+  late FlutterTts _flutterTts;
+
   @override
   void initState() {
     super.initState();
@@ -49,6 +57,12 @@ class _HomeScreenState extends State<HomeScreen>
     _pulseAnimation = Tween<double>(begin: 1.0, end: 1.2).animate(
       CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
     );
+
+    _speech = stt.SpeechToText();
+
+    _flutterTts = FlutterTts();
+    _flutterTts.setLanguage("hi-IN");
+    _flutterTts.setSpeechRate(0.5);
   }
 
   @override
@@ -57,10 +71,41 @@ class _HomeScreenState extends State<HomeScreen>
     super.dispose();
   }
 
-  void toggleListening() {
-    setState(() {
-      isListening = !isListening;
-    });
+  Future<void> speak(String text) async {
+    await _flutterTts.speak(text);
+  }
+
+  void toggleListening() async {
+    if (!isListening) {
+      bool available = await _speech.initialize(
+        onStatus: (status) {
+          if (status == 'done' || status == 'notListening') {
+            setState(() => isListening = false);
+            if (recognizedText.isNotEmpty) {
+              speak('Aapne kaha: $recognizedText');
+            }
+          }
+        },
+        onError: (error) {
+          setState(() => isListening = false);
+        },
+      );
+
+      if (available) {
+        setState(() => isListening = true);
+        _speech.listen(
+          localeId: 'hi_IN',
+          onResult: (result) {
+            setState(() {
+              recognizedText = result.recognizedWords;
+            });
+          },
+        );
+      }
+    } else {
+      setState(() => isListening = false);
+      _speech.stop();
+    }
   }
 
   void scanWifi() async {
@@ -159,7 +204,17 @@ class _HomeScreenState extends State<HomeScreen>
                   textAlign: TextAlign.center,
                 ),
               ),
-              const SizedBox(height: 60),
+              const SizedBox(height: 16),
+              if (recognizedText.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: Text(
+                    recognizedText,
+                    style: TextStyle(fontSize: 16, color: Colors.white.withOpacity(0.8)),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              const SizedBox(height: 40),
               GestureDetector(
                 onTap: toggleListening,
                 child: AnimatedBuilder(
@@ -218,6 +273,13 @@ class _HomeScreenState extends State<HomeScreen>
                     const SizedBox(width: 40),
                     _buildIconButton(Icons.wifi, 'WiFi', () {
                       scanWifi();
+                    }),
+                    const SizedBox(width: 40),
+                    _buildIconButton(Icons.map, 'Map', () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const MapScreen()),
+                      );
                     }),
                   ],
                 ),
