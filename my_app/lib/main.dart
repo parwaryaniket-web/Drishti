@@ -43,6 +43,7 @@ class _HomeScreenState extends State<HomeScreen>
 
   late stt.SpeechToText _speech;
   String recognizedText = '';
+  bool isFirstPress = true;
 
   late FlutterTts _flutterTts;
 
@@ -77,12 +78,17 @@ class _HomeScreenState extends State<HomeScreen>
 
   void toggleListening() async {
     if (!isListening) {
+      if (isFirstPress) {
+        isFirstPress = false;
+        await speak('Welcome to Vision Assist. How can I help you?');
+      }
+
       bool available = await _speech.initialize(
         onStatus: (status) {
           if (status == 'done' || status == 'notListening') {
             setState(() => isListening = false);
             if (recognizedText.isNotEmpty) {
-              speak('Aapne kaha: $recognizedText');
+              processCommand(recognizedText);
             }
           }
         },
@@ -105,6 +111,36 @@ class _HomeScreenState extends State<HomeScreen>
     } else {
       setState(() => isListening = false);
       _speech.stop();
+    }
+  }
+
+  void processCommand(String command) {
+    String cmd = command.toLowerCase().trim();
+
+    if (cmd.contains('hello') || cmd.contains('hi') || cmd.contains('namaste') ||
+        cmd.contains('हेलो') || cmd.contains('हाय') || cmd.contains('नमस्ते')) {
+      speak('Hello! Main aapki kaise help kar sakta hu?');
+    } else if (cmd.contains('map') || cmd.contains('naksha') || cmd.contains('location') ||
+        cmd.contains('मैप') || cmd.contains('नक्शा') || cmd.contains('लोकेशन')) {
+      speak('Map khol raha hu');
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const MapScreen()),
+      );
+    } else if (cmd.contains('bluetooth') || cmd.contains('ब्लूटूथ')) {
+      speak('Bluetooth khol raha hu');
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const BluetoothScreen()),
+      );
+    } else if (cmd.contains('wifi') || cmd.contains('वाईफाई')) {
+      speak('WiFi scan kar raha hu');
+      scanWifi();
+    } else if (cmd.contains('time') || cmd.contains('samay') || cmd.contains('समय')) {
+      final now = DateTime.now();
+      speak('Abhi time hai ${now.hour} baje aur ${now.minute} minute');
+    } else {
+      speak('Maaf kijiye, mujhe samajh nahi aaya. Aap map kholo ya bluetooth bol sakte hain');
     }
   }
 
